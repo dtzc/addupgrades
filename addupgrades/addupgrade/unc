@@ -1,0 +1,87 @@
+print("\n")
+print("Adding functions to " .. getexecutorname() .. ".")
+
+if not getgenv then error("The global environment was not found.") end
+
+getgenv().old_setmetatable = setmetatable
+getgenv().saved_metatables = {}
+getgenv().hiddenProperties = {}
+
+print("Adding setmetatable..")
+getgenv().setmetatable = function(table, metatable)
+	local success, result = pcall(function()
+		return old_setmetatable(table, metatable)
+	end)
+
+	saved_metatables[table] = metatable
+
+	if not success then
+		error(result)
+	end
+
+	return table
+end
+print("Added setmetatable succesfully.")
+print("Adding getrawmetatable..")
+task.wait(0.2)
+
+getgenv().getrawmetatable = function(table)
+    return saved_metatables[table]
+end
+print("Added getrawmetatable succesfully.")
+print("Adding setrawmetatable..")
+task.wait(0.1)
+
+getgenv().setrawmetatable = function(table, new_metatable)
+    local current_metatable = getgenv().getrawmetatable(table)
+
+    for key, value in pairs(new_metatable) do
+        current_metatable[key] = value
+    end
+
+    return table
+end
+print("Added setrawmetatable succesfully.")
+print("Adding hookmetamethod..")
+task.wait(0.05)
+
+getgenv().hookmetamethod = function(object, method, new_method)
+    local raw_metatable = getgenv().getrawmetatable(object)
+    local old_method = raw_metatable[method]
+    
+    raw_metatable[method] = new_method
+    getgenv().setrawmetatable(object, raw_metatable)
+
+    return old_method
+end
+print("Added hookmetamethod succesfully.")
+print("Adding sethiddenproperty..")
+task.wait(0.6)
+
+getgenv().sethiddenproperty = function(obj, property, value)
+    if not obj or type(property) ~= "string" then
+        error("Failed to set hidden property '" .. tostring(property) .. "' on the object: " .. tostring(obj))
+    end
+
+    hiddenProperties[obj] = hiddenProperties[obj] or {}
+    hiddenProperties[obj][property] = value
+    return true
+end
+print("Added sethiddenproperty succesfully.")
+print("Adding gethiddenproperty..")
+task.wait(0.6)
+
+getgenv().gethiddenproperty = function(obj, property)
+    if not obj or type(property) ~= "string" then
+        error("Failed to get hidden property '" .. tostring(property) .. "' from the object: " .. tostring(obj))
+    end
+
+    local value = hiddenProperties[obj] and hiddenProperties[obj][property] or nil
+    local isHidden = true
+
+    return value or (property == "size_xml" and 5), isHidden
+end
+print("Added gethiddenproperty succesfully.")
+
+print("Done! UpgradingExecutors (UE) made by dtzc on discord.")
+print("Thanks for using.")
